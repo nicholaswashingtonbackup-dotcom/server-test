@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique identifier of the user"
+        },
+        "name": {
+          "type": "string",
+          "description": "Legacy compatibility name of the user"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Full display name of the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "Corporate email address"
+        },
+        "avatar": {
+          "type": "string",
+          "description": "URL of user avatar"
+        },
+        "organization": {
+          "type": "string",
+          "description": "Corporate organization name"
+        },
+        "role": {
+          "type": "string",
+          "description": "User corporate role"
+        },
+        "meetingPermissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Assigned meeting permission tokens"
+        },
+        "mfaEnabled": {
+          "type": "boolean",
+          "description": "Whether multi-factor authentication is configured"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp in ISO format"
+        },
+        "lastSeenAt": {
+          "type": "string",
+          "description": "Last seen timestamp in ISO format"
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "displayName",
+        "email",
+        "avatar",
+        "organization",
+        "role",
+        "meetingPermissions",
+        "mfaEnabled",
+        "createdAt",
+        "lastSeenAt"
+      ]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "The user's corporate profile in EXOS"
+    }
+  }
+}

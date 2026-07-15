@@ -1,0 +1,6 @@
+{
+  "name": "Executive Meeting Platform",
+  "description": "Mobile-first secure meeting client for the Executive Operating System (EXOS), featuring real-time executive voice & text communication, recordings, and team collaboration.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Global helper functions
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { 
+      return request.resource.data; 
+    }
+    function existing() { 
+      return resource.data; 
+    }
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    function isOwner(userId) { 
+      return isSignedIn() && request.auth.uid == userId; 
+    }
+    
+    // User profile validation helper
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+        'userId', 'name', 'displayName', 'email', 'avatar', 
+        'organization', 'role', 'meetingPermissions', 'mfaEnabled', 
+        'createdAt', 'lastSeenAt'
+      ])
+        && data.userId is string && data.userId.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.displayName is string && data.displayName.size() <= 256
+        && data.email is string && data.email.size() <= 256
+        && data.avatar is string && data.avatar.size() <= 1024
+        && data.organization is string && data.organization.size() <= 256
+        && data.role is string && data.role.size() <= 128
+        && data.meetingPermissions is list
+        && data.mfaEnabled is bool
+        && data.createdAt is string
+        && data.lastSeenAt is string;
+    }
+    
+    // Users Collection rules
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow delete: if false; // Profiles are permanent
+    }
+
+    // Meetings Collection and Subcollections rules
+    match /meetings/{meetingId} {
+      allow read, write: if isSignedIn();
+      
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+      
+      match /polls/{pollId} {
+        allow read, write: if isSignedIn();
+      }
+      
+      match /whiteboard/{elementId} {
+        allow read, write: if isSignedIn();
+      }
+      
+      match /participants/{participantId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+server:
+  host: "0.0.0.0"
+  port: 3000
+  tls:
+    enabled: false
+meeting:
+  max_humans: 5
+  archive_path: "meetings/"
+websocket:
+  enabled: true
+  heartbeat: 30
+  reconnect_timeout: 60
+permissions:
+  - owner
+  - moderator
+  - participant
+  - observer
