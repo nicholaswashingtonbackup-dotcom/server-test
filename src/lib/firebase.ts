@@ -27,6 +27,53 @@ export const storage = getStorage(app);
 // Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
 
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 // App Check Readiness Scaffold
 // Future production environments can activate App Check using the following scaffold:
 // import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
@@ -128,6 +175,9 @@ export async function syncUserProfile(user: User, customDisplayName?: string, cu
     }
     return profile;
   } catch (error) {
+    if (error instanceof Error && (error.message.includes('permission') || error.message.includes('denied'))) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
     console.error('Error syncing user profile in Firestore:', error);
     const now = new Date().toISOString();
     const finalName = customDisplayName || user.displayName || 'Nicholas Washington';

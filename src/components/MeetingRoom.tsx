@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Meeting, Message, Executive, ExecutiveId, Poll, Participant } from '../types';
 import { exosAdapter, EXOS_EXECUTIVES } from '../lib/exosAdapter';
 import { collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import WaveformVisualizer from './WaveformVisualizer';
 import SharedWhiteboard from './SharedWhiteboard';
 import { 
@@ -120,6 +120,9 @@ export default function MeetingRoom({ meetingId, user, onLeaveMeeting, onNavigat
           joinedAt: new Date().toISOString()
         });
       } catch (err) {
+        if (err instanceof Error && (err.message.includes('permission') || err.message.includes('denied'))) {
+          handleFirestoreError(err, OperationType.WRITE, `meetings/${meetingId}/participants/${user.email}`);
+        }
         console.error('[EXOS] Failed to register participant session:', err);
       }
     };
@@ -146,6 +149,9 @@ export default function MeetingRoom({ meetingId, user, onLeaveMeeting, onNavigat
         }
       }
     }, (err) => {
+      if (err instanceof Error && (err.message.includes('permission') || err.message.includes('denied'))) {
+        handleFirestoreError(err, OperationType.GET, `meetings/${meetingId}/participants`);
+      }
       console.error('[EXOS] Real-time participants listener failed:', err);
     });
 
@@ -972,8 +978,15 @@ export default function MeetingRoom({ meetingId, user, onLeaveMeeting, onNavigat
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={async () => {
-                                      const pRef = doc(db, 'meetings', meetingId, 'participants', p.email);
-                                      await updateDoc(pRef, { isMuted: !p.isMuted });
+                                      try {
+                                        const pRef = doc(db, 'meetings', meetingId, 'participants', p.email);
+                                        await updateDoc(pRef, { isMuted: !p.isMuted });
+                                      } catch (err) {
+                                        if (err instanceof Error && (err.message.includes('permission') || err.message.includes('denied'))) {
+                                          handleFirestoreError(err, OperationType.UPDATE, `meetings/${meetingId}/participants/${p.email}`);
+                                        }
+                                        console.error('[EXOS] Failed to toggle remote mute:', err);
+                                      }
                                     }}
                                     className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-white/5 cursor-pointer text-[10px] font-mono"
                                     title="Toggle remote mute"
@@ -984,8 +997,15 @@ export default function MeetingRoom({ meetingId, user, onLeaveMeeting, onNavigat
                                   <button
                                     onClick={async () => {
                                       if (confirm(`Are you sure you want to remove ${p.name} from the boardroom session?`)) {
-                                        const pRef = doc(db, 'meetings', meetingId, 'participants', p.email);
-                                        await updateDoc(pRef, { isPresent: false });
+                                        try {
+                                          const pRef = doc(db, 'meetings', meetingId, 'participants', p.email);
+                                          await updateDoc(pRef, { isPresent: false });
+                                        } catch (err) {
+                                          if (err instanceof Error && (err.message.includes('permission') || err.message.includes('denied'))) {
+                                            handleFirestoreError(err, OperationType.UPDATE, `meetings/${meetingId}/participants/${p.email}`);
+                                          }
+                                          console.error('[EXOS] Failed to remove participant:', err);
+                                        }
                                       }
                                     }}
                                     className="px-2 py-1 bg-red-950/20 hover:bg-red-950/40 text-red-400 rounded-lg border border-red-500/20 cursor-pointer text-[10px] font-mono"
