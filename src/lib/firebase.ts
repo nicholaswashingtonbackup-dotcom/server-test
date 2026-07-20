@@ -8,12 +8,19 @@ import {
   createUserWithEmailAndPassword, 
   signOut 
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, setLogLevel } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Set Firestore log level to suppress benign gRPC idle stream warnings
+try {
+  setLogLevel('error');
+} catch (e) {
+  console.warn('Failed to set Firestore log level:', e);
+}
 
 // Initialize Firestore with specific database ID if available
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
